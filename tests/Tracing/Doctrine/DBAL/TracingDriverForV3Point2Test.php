@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Sentry\SentryBundle\Tests\Tracing\Doctrine\DBAL;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\API\ExceptionConverter;
 use Doctrine\DBAL\Driver as DriverInterface;
+use Doctrine\DBAL\Driver\API\ExceptionConverter;
 use Doctrine\DBAL\Driver\Connection as DriverConnectionInterface;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
@@ -15,9 +15,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Sentry\SentryBundle\Tests\DoctrineTestCase;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverConnectionFactoryInterface;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverConnectionInterface;
-use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverForV3;
+use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverForV3Point2;
 
-final class TracingDriverForV3Test extends DoctrineTestCase
+final class TracingDriverForV3Point2Test extends DoctrineTestCase
 {
     /**
      * @var MockObject&TracingDriverConnectionFactoryInterface
@@ -26,12 +26,8 @@ final class TracingDriverForV3Test extends DoctrineTestCase
 
     public static function setUpBeforeClass(): void
     {
-        if (!self::isDoctrineDBALVersion3Installed()) {
-            self::markTestSkipped('This test requires the version of the "doctrine/dbal" Composer package to be >= 3.0.');
-        }
-
-        if (self::isDoctrineDBALVersion3Point2Installed()) {
-            self::markTestSkipped('This test requires the version of the "doctrine/dbal" Composer package to be >= 3.0 <= 3.0.');
+        if (!self::isDoctrineDBALVersion3Point2Installed()) {
+            self::markTestSkipped('This test requires the version of the "doctrine/dbal" Composer package to be >= 3.2.');
         }
     }
 
@@ -62,7 +58,7 @@ final class TracingDriverForV3Test extends DoctrineTestCase
             ->with($driverConnection, $databasePlatform, $params)
             ->willReturn($tracingDriverConnection);
 
-        $driver = new TracingDriverForV3($this->connectionFactory, $decoratedDriver);
+        $driver = new TracingDriverForV3Point2($this->connectionFactory, $decoratedDriver);
 
         $this->assertSame($tracingDriverConnection, $driver->connect($params));
     }
@@ -76,7 +72,7 @@ final class TracingDriverForV3Test extends DoctrineTestCase
             ->method('getDatabasePlatform')
             ->willReturn($databasePlatform);
 
-        $driver = new TracingDriverForV3($this->connectionFactory, $decoratedDriver);
+        $driver = new TracingDriverForV3Point2($this->connectionFactory, $decoratedDriver);
 
         $this->assertSame($databasePlatform, $driver->getDatabasePlatform());
     }
@@ -93,7 +89,7 @@ final class TracingDriverForV3Test extends DoctrineTestCase
             ->with($connection, $databasePlatform)
             ->willReturn($schemaManager);
 
-        $driver = new TracingDriverForV3($this->connectionFactory, $decoratedDriver);
+        $driver = new TracingDriverForV3Point2($this->connectionFactory, $decoratedDriver);
 
         $this->assertSame($schemaManager, $driver->getSchemaManager($connection, $databasePlatform));
     }
@@ -107,37 +103,8 @@ final class TracingDriverForV3Test extends DoctrineTestCase
             ->method('getExceptionConverter')
             ->willReturn($exceptionConverter);
 
-        $driver = new TracingDriverForV3($this->connectionFactory, $decoratedDriver);
+        $driver = new TracingDriverForV3Point2($this->connectionFactory, $decoratedDriver);
 
         $this->assertSame($exceptionConverter, $driver->getExceptionConverter());
-    }
-
-    public function testCreateDatabasePlatformForVersion(): void
-    {
-        $databasePlatform = $this->createMock(AbstractPlatform::class);
-
-        $decoratedDriver = $this->createMock(VersionAwarePlatformDriverInterface::class);
-        $decoratedDriver->expects($this->once())
-            ->method('createDatabasePlatformForVersion')
-            ->with('5.7')
-            ->willReturn($databasePlatform);
-
-        $driver = new TracingDriverForV3($this->connectionFactory, $decoratedDriver);
-
-        $this->assertSame($databasePlatform, $driver->createDatabasePlatformForVersion('5.7'));
-    }
-
-    public function testCreateDatabasePlatformForVersionWhenDriverDoesNotImplementInterface(): void
-    {
-        $databasePlatform = $this->createMock(AbstractPlatform::class);
-
-        $decoratedDriver = $this->createMock(DriverInterface::class);
-        $decoratedDriver->expects($this->once())
-            ->method('getDatabasePlatform')
-            ->willReturn($databasePlatform);
-
-        $driver = new TracingDriverForV3($this->connectionFactory, $decoratedDriver);
-
-        $this->assertSame($databasePlatform, $driver->createDatabasePlatformForVersion('5.7'));
     }
 }

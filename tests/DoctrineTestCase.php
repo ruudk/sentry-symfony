@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sentry\SentryBundle\Tests;
 
+use Composer\InstalledVersions;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\DBAL\Driver;
 use Doctrine\DBAL\Driver\ResultStatement;
@@ -13,23 +14,29 @@ abstract class DoctrineTestCase extends TestCase
 {
     protected static function isDoctrineDBALInstalled(): bool
     {
-        return interface_exists(Driver::class);
+        return InstalledVersions::isInstalled('doctrine/dbal');
     }
 
     protected static function isDoctrineDBALVersion2Installed(): bool
     {
         return self::isDoctrineDBALInstalled()
-            && interface_exists(ResultStatement::class);
+            && version_compare(InstalledVersions::getVersion('doctrine/dbal') ?? '0', '3.0', '<');
     }
 
     protected static function isDoctrineDBALVersion3Installed(): bool
     {
         return self::isDoctrineDBALInstalled()
-            && !self::isDoctrineDBALVersion2Installed();
+            && version_compare(InstalledVersions::getVersion('doctrine/dbal') ?? '0', '3.0', '>=');
+    }
+
+    protected static function isDoctrineDBALVersion3Point2Installed(): bool
+    {
+        return self::isDoctrineDBALInstalled()
+            && version_compare(InstalledVersions::getVersion('doctrine/dbal') ?? '0', '3.2', '>=');
     }
 
     protected static function isDoctrineBundlePackageInstalled(): bool
     {
-        return class_exists(DoctrineBundle::class);
+        return InstalledVersions::isInstalled('doctrine/doctrine-bundle');
     }
 }

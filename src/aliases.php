@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sentry\SentryBundle;
 
+use Composer\InstalledVersions;
 use Doctrine\DBAL\Result;
 use Sentry\SentryBundle\Tracing\Cache\TraceableCacheAdapter;
 use Sentry\SentryBundle\Tracing\Cache\TraceableCacheAdapterForV2;
@@ -15,6 +16,7 @@ use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriver;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverForV2;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverForV3;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingStatement;
+use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingDriverForV3Point2;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingStatementForV2;
 use Sentry\SentryBundle\Tracing\Doctrine\DBAL\TracingStatementForV3;
 use Sentry\SentryBundle\Tracing\HttpClient\TraceableHttpClient;
@@ -53,7 +55,12 @@ if (interface_exists(AdapterInterface::class)) {
 if (!class_exists(TracingStatement::class)) {
     if (class_exists(Result::class)) {
         class_alias(TracingStatementForV3::class, TracingStatement::class);
-        class_alias(TracingDriverForV3::class, TracingDriver::class);
+
+        if (class_exists(InstalledVersions::class) && version_compare(InstalledVersions::getVersion('doctrine/dbal') ?? '0', '3.2', '>=')) {
+            class_alias(TracingDriverForV3Point2::class, 'Sentry\\SentryBundle\\Tracing\\Doctrine\\DBAL\\TracingDriver');
+        } else {
+            class_alias(TracingDriverForV3::class, TracingDriver::class);
+        }
     } elseif (interface_exists(Result::class)) {
         class_alias(TracingStatementForV2::class, TracingStatement::class);
         class_alias(TracingDriverForV2::class, TracingDriver::class);
